@@ -1,80 +1,74 @@
 #include<stdio.h>
-#include<semaphore.h>
-#include<pthread.h>
-#include<unistd.h>
-
+#include<stdlib.h>
 #define buffer_size 5
 
-int count=0,x=0;
-int buffer[buffer_size];
-sem_t full,empty,mutex;
-void wait(sem_t *s)
-{
-    sem_wait(s);
+int buffer[buffer_size],x=0,count=0;
+int full=0;
+int empty=buffer_size;
+int mutex=1;
+
+void wait(int *s){
+    if(*s>0){
+        (*s)--;
+    }
 }
 
-void signal_sem(sem_t *s)
-{
-    sem_post(s);
+void sem_signal(int *s){
+    (*s)++;
 }
 
-void producer()
-{
-    if(count==buffer_size)
-    {
-        printf("Buffer is full");
+void producer(){
+
+    if(empty==0){
+        printf("\nBuffer is full.\n");
+        return;
     }
     wait(&empty);
     wait(&mutex);
 
     buffer[count]=++x;
-    printf("The item produced=%d\n",x);
+    printf("item produced=%d\n",x);
     count++;
 
-    signal_sem(&mutex);
-    signal_sem(&full);
+    sem_signal(&mutex);
+    sem_signal(&full);
 }
 
-void consumer()
-{
-    if(count==0)
-    {
-        printf("Buffer is empty\n");
+void consumer(){
+    if(full==0){
+        printf("\nBuffer is empty.\n");
+        return;
     }
     wait(&full);
     wait(&mutex);
 
     x=buffer[count-1];
-    printf("The item consumed=%d\n",x);
+    printf("item consumed=%d\n",x);
     count--;
 
-    signal_sem(&mutex);
-    signal_sem(&empty);
+    sem_signal(&mutex);
+    sem_signal(&empty);
 }
 
-int main()
-{
-    sem_init(&full,0,0);
-    sem_init(&empty,0,buffer_size);
-    sem_init(mutex,0,1);
-    int choice;
-    for(;;){
-    printf("Enter 1.Produce 2.consume 3.exit\n");
-    scanf("%d",&choice);
-    switch(choice)
-    {
-    case 1:
-        producer();
-        break;
-    case 2:
-        consumer();
-        break;
-    case 3:
-        printf("Exiting....\n");
-        sem_destroy(&empty);
-        sem_destroy(&full);
-        sem_destroy(&mutex);
-        return 0;
+int main(){
+    int c;
+    while(1){
+        printf("Enter\n1.produce\n2.consume\n3.exit\n");
+        scanf("%d",&c);
+        switch(c){
+        case 1:
+            producer();
+            break;
+        case 2:
+            consumer();
+            break;
+        case 3:
+            printf("Exiting.\n");
+            exit(0);
+        default:
+            printf("Invalid entry.\n");
+            break;
+        }
     }
-    }
+    return 0;
 }
